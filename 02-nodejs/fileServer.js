@@ -16,10 +16,46 @@
 
     Testing the server - run `npm run test-fileServer` command in terminal
  */
-const express = require('express');
-const fs = require('fs');
-const path = require('path');
-const app = express();
-
-
-module.exports = app;
+    const express = require('express');
+    const fs = require('fs');
+    const path = require('path');
+    const port = 3001;
+    
+    const app = express();
+    module.exports = app;
+    
+    
+    const filesDirectory = path.join(__dirname, 'files');
+    console.log(filesDirectory);
+    
+    function getAllFiles(req, res){
+      fs.readdir(filesDirectory, (err, files) => {
+        if (err) {
+          res.status(500).json({ error: 'Unable to read files.' });
+        } else {
+          res.status(200).json({ files });
+        }
+      });
+    }
+    
+    function getFileContent(req, res){
+      const fileName = req.params.filename;
+    
+      fs.readFile(`${filesDirectory}/${fileName}`, "utf-8", (err, data) => {
+        if (err) {
+          res.status(500).json({ error: 'Unable to read files.' });
+        } else {
+          res.status(200).json({ data });
+        }
+      });
+    }
+    
+    app.get('/files', getAllFiles);
+    app.get('/file/:filename', getFileContent);
+    
+    
+    function started(){
+      console.log(`server started at port: ${port}`);
+    }
+    
+    app.listen(port, started);
