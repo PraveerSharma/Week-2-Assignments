@@ -39,11 +39,168 @@
 
   Testing the server - run `npm run test-todoServer` command in terminal
  */
-const express = require('express');
-const bodyParser = require('body-parser');
-
-const app = express();
-
-app.use(bodyParser.json());
-
-module.exports = app;
+  
+  const express = require('express');
+  const bodyParser = require('body-parser');
+  const fs = require('fs');
+  
+  const app = express();
+  const port = 3000;
+    
+  app.use(bodyParser.json());
+    
+  module.exports = app;
+  
+  /*
+  var todo1 = {
+      title: 'hi1',
+      description: 'testing1'
+  }
+  var todo2 = {
+      title: 'hi2',
+      description: 'testing2'
+  }
+  */
+  
+  // all todos are stored in this array as objects -> (id, title, description) 
+  var todosList = [];
+  
+  /*
+      todosList[0] = todo1;
+      todosList[1] = todo2;
+  */
+  
+  // Function to generate a unique ID
+  function generateUniqueID() {
+      return '_' + Math.random().toString(36).substr(2, 9);
+  }
+  
+  function updateFile(){
+      // Convert the array of objects to a JSON string
+      const content = JSON.stringify(todosList, null, 2);
+  
+      function errorFn(err){
+          if(err){
+              console.log('error writing to file ' + err);
+          }else{
+              console.log('File written successfully.');
+  
+          }
+      }
+  
+      fs.writeFile('todosList.txt', content, errorFn)
+  }
+  
+  // this function adds new todo to 'todosList' array
+  function addNewTodo(todo){
+      const newTodo = {
+          "id": generateUniqueID(),
+          "title": todo.title,
+          "description": todo.description
+      }
+      todosList.push(newTodo);
+  }
+  
+  
+  function getTodo(req, res) {
+      const todoId = req.params.id;  // Access the 'id' parameter
+      console.log(`Requested todo with ID: ${todoId}`);
+  
+      var foundTodo = false;
+      var todoItem = {};
+      for(const todo of todosList){
+          if(todo.id == todoId){
+              foundTodo = true;
+              todoItem = todo;
+              break;
+          }
+      }
+  
+      if(foundTodo){
+          const content = JSON.stringify(todoItem);
+          res.status(200).send(content);
+      }else{
+          res.status(404).send(`no todo with ID: ${todoId}`);
+      } 
+  }
+  
+  function getAllTodos(req, res){
+      const content = JSON.stringify(todosList);
+      res.status(200).send(content);
+  }
+  
+  function createTodo(req, res){
+      const todo = req.body;
+      console.log(todo);
+  
+      addNewTodo(todo);
+      updateFile();
+      res.status(201).send(JSON.stringify(todosList));
+  }
+  
+  function updateTodo(req, res){
+      const todoId = req.params.id;
+  
+      let foundTodo = false;
+      let updatedTodo = {};
+      for(const todo of todosList){
+          if(todo.id == todoId){
+              foundTodo = true;
+              todo.title = req.body.title;
+              todo.description = req.body.description;
+              updateTodo = todo;
+              break;
+          }
+      }
+      if(foundTodo){
+          res.status(200).send(JSON.stringify(updateTodo));
+      }else{
+          res.status(404).send(`todo not found with ID: ${todoId}`);
+      }
+  }
+  
+  function deleteTodo(req, res){
+      const todoId = req.params.id;
+  
+      let foundTodo = false;
+      for(const todo of todosList){
+          if(todo.id == todoId){
+              foundTodo = true;
+  
+              const indexOfTodo = todosList.indexOf(todo);
+              todosList.splice(indexOfTodo, 1);
+              updateFile();
+          }
+      }
+  
+      if(foundTodo){
+          res.status(200).send(JSON.stringify(todosList));
+      }else{
+          res.status(404).send(`todo not found with ID: ${todoId}`);
+      }
+  }
+  
+  function undefinedRoute(req, res){
+      res.status(404).send("invalid route");
+  }
+  
+  app.get('/todos', getAllTodos); // get all todos
+  app.post('/todos', createTodo); // create a new todo
+  
+  app.get('/todos/:id', getTodo); // get a particular todo via ID
+  app.put('/todos/:id', updateTodo); // update an existing todo
+  app.delete('/todos/:id', deleteTodo); // delete an existing todo
+  
+  // any other route
+  app.get('/:route', undefinedRoute);
+  
+  
+  
+  
+  
+  
+  function started(){
+      console.log(`Server is running on ${port}`);
+  }
+  
+  app.listen(port, started);
