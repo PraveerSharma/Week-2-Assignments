@@ -32,6 +32,107 @@
 const express = require("express")
 const PORT = 3000;
 const app = express();
+const bodyParser = require("body-parser");
 // write your logic here, DONT WRITE app.listen(3000) when you're running tests, the tests will automatically start the server
+
+app.use(bodyParser.json());
+
+let users = [];
+
+function generateUniqueID() {
+  return '_' + Math.random().toString(36).substr(2, 9);
+}
+
+function createAccount(req, res){
+  const newUser = {
+    id: generateUniqueID(),
+    username: req.body.username,
+    password: req.body.password,
+    firstname: req.body.firstname,
+    lastname: req.body.lastname
+  } 
+  let isAlreadyUser = false;
+
+  for(const user of users){
+    if(user.username == newUser.username){
+      isAlreadyUser = true;
+      break;
+    }
+  }
+
+  if(isAlreadyUser){
+    res.status(400).send("username already exists");
+  }else{
+    users.push(newUser);
+    res.status(201).send(JSON.stringify(users));
+  }
+  
+}
+
+function showDetails(user){
+  return {firstname: user.firstname, lastname: user.lastname, id: user.id}
+}
+
+function userDetails(req, res){
+  const username = req.body.username;
+  const password = req.body.password;
+
+  for(const user of users){
+    if((user.username == username) && (user.password == password)){
+      const data = showDetails(user);
+      res.status(200).send(JSON.stringify(data));
+    }
+  }
+  res.status(401).send("credentials are invalid");
+}
+
+// function getUsersData(req, res){
+//   const data = {
+//     users: function (){
+//             const answer = {}
+//             for(const user of users){
+//               const userData = {
+//                 firstname: user.firstname,
+//                 lastname: user.lastname
+//               }
+//               answer.push(userData);
+//             }
+//             return answer
+//           },
+    
+//   }
+//   res.status(200).send(JSON.stringify(data));
+// }
+
+app.get('/data', (req, res) => {
+  const username = req.headers.username;
+  const password = req.headers.password;
+
+  
+
+  const user = users.find(user => user.username === username && user.password === password);
+
+  if (!user) {
+    return res.status(401).json({ error: 'Unauthorized. Invalid credentials.' });
+  }
+
+  const userData = users.map(user => ({ 
+    id: user.id, 
+    firstname: user.firstname, 
+    lastname: user.lastname 
+  }));
+
+  console.log({ users: userData })
+
+  res.status(200).json({ users: userData });
+});
+
+// app.get('/data', getUsersData);
+app.post('/signup', createAccount);
+app.post('/login', userDetails)
+
+app.listen(PORT, () => {
+  console.log(`server started at port: ${PORT}`)
+});
 
 module.exports = app;

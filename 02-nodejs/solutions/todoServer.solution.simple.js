@@ -1,9 +1,12 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const path = require("path");
+const cors = require("cors");
 
 const app = express();
 
 app.use(bodyParser.json());
+app.use(cors()); // way-2 :it will allow all frontends to give requests to this server(backend)
 
 let todos = [];
 
@@ -66,9 +69,18 @@ app.delete('/todos/:id', (req, res) => {
   }
 });
 
+// way1: To resolve CORS error // one way is to place files at same place - localhost
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "/index.html"));
+});
+
 // for all other routes, return 404
 app.use((req, res, next) => {
   res.status(404).send();
 });
 
+
+
+
+app.listen(3000);
 module.exports = app;
